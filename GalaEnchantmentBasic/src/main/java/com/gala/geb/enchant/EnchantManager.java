@@ -40,9 +40,9 @@ public class EnchantManager {
 
     public void reload() {
         enchants.clear();
-        file = new File(plugin.getDataFolder(), "systemenchantment.yml");
+        file = new File(plugin.getDataDir(), "systemenchantment.yml");
         if (!file.exists()) {
-            plugin.getDataFolder().mkdirs();
+            plugin.getDataDir().mkdirs();
             try {
                 file.createNewFile();
             } catch (IOException e) {
