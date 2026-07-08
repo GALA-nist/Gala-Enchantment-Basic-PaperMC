@@ -30,12 +30,12 @@ public final class GEBPlugin extends JavaPlugin {
 
     // ------------------------------------------------------------------
     //  Custom data folder: "Gala Enchantment Basic" (with spaces)
+    //  (getDataFolder() is final in Paper 26.1, so we use our own method)
     // ------------------------------------------------------------------
 
-    @Override
-    public @NotNull File getDataFolder() {
+    public @NotNull File getDataDir() {
         if (dataDir == null) {
-            dataDir = new File(super.getDataFolder().getParentFile(), DATA_FOLDER_NAME);
+            dataDir = new File(getDataFolder().getParentFile(), DATA_FOLDER_NAME);
         }
         return dataDir;
     }
@@ -49,14 +49,14 @@ public final class GEBPlugin extends JavaPlugin {
     @Override
     public void reloadConfig() {
         saveDefaultConfig();
-        config = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "config.yml"));
+        config = YamlConfiguration.loadConfiguration(new File(getDataDir(), "config.yml"));
     }
 
     @Override
     public void saveDefaultConfig() {
-        File file = new File(getDataFolder(), "config.yml");
+        File file = new File(getDataDir(), "config.yml");
         if (file.exists()) return;
-        getDataFolder().mkdirs();
+        getDataDir().mkdirs();
         try (InputStream in = getResource("config.yml")) {
             if (in != null) Files.copy(in, file.toPath());
         } catch (IOException e) {
