@@ -53,28 +53,4 @@ Every page also has **Back** (arrow) and **Exit** (barrier) buttons.
 All plugin files (config.yml + systemenchantment.yml) are stored in:
 `plugins/Gala Enchantment Basic/`
 
-## Getting the jar (no tools needed - GitHub builds it for you)
 
-1. Create a free account at https://github.com and click **New repository**
-   (any name, can be private).
-2. Upload the CONTENTS of this folder (build.gradle, settings.gradle,
-   the `src` folder and the `.github` folder) via **Add file → Upload files**.
-   Keep the folder structure intact.
-3. GitHub Actions starts building automatically. Open the **Actions** tab,
-   click the newest run, wait for the green check (~1-2 min).
-4. Scroll down to **Artifacts** and download **GalaEnchantmentBasic-jar**.
-   Unzip it - inside is `GalaEnchantmentBasic-1.0.0.jar`.
-5. Drop the jar into your server's `plugins/` folder and restart.
-
-## Building locally (alternative)
-
-Requires **Java 21** and Gradle 8.5+:
-
-```bash
-cd GalaEnchantmentBasic
-gradle build
-```
-
-The jar lands in `build/libs/`. If the Paper API version in `build.gradle`
-fails to resolve, check https://repo.papermc.io for the current 26.1.2
-`paper-api` artifact name.
