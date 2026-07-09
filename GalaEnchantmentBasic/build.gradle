@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.gala'
+version = '1.4.0-beta'
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+dependencies {
+    // Paper API for the 26.1.2 line. If Gradle cannot resolve this exact build,
+    // check https://repo.papermc.io for the newest 26.1.2 paper-api artifact.
+    compileOnly 'io.papermc.paper:paper-api:26.1.2.build.+'
+}
+
+processResources {
+    filesMatching('plugin.yml') {
+        expand(version: project.version)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
