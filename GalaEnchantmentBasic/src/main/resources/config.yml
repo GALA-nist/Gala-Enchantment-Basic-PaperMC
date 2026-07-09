@@ -1,0 +1,91 @@
+# ============================================
+#  Gala Enchantment Basic - configuration
+# ============================================
+
+# Highest level an admin can pick in the level selector (I .. XI by default).
+max-level: 11
+
+# ---------- Effect blacklist ----------
+blacklist:
+  # These vanilla effect keys can NEVER be used, no matter the item.
+  # (instant health = abusable perma-heal, levitation = "shulker flying",
+  #  saturation = free food, etc.)
+  global:
+    - instant_health
+    - instant_damage
+    - levitation
+    - saturation
+    - health_boost
+    - bad_omen
+    - raid_omen
+    - trial_omen
+    - hero_of_the_village
+    - wind_charged
+    - weaving
+    - oozing
+    - infested
+
+  # Armor and tools apply their effect to the WEARER/HOLDER,
+  # so harmful (negative) effects are blocked for them.
+  block-harmful-on-armor-and-tools: true
+
+  # Weapons allow BOTH kinds of effects:
+  #  - debuffs (Poison, Slowness, Weakness...) are applied to the TARGET you hit
+  #  - buffs (Regeneration, Speed...) are applied to YOU when you hit
+
+# ---------- Enchanting table integration ----------
+enchant-table:
+  # When a player enchants a valid item at an enchanting table,
+  # this is the chance (0.0 - 1.0) that a random matching GEB
+  # enchantment is added on top of the vanilla ones.
+  enabled: true
+  chance: 0.20
+  # ---- Gamble tier rolling ----
+  # power = XP cost / 30. Normal rolls land in a band around
+  # power * max-level * mid-scale (band is 3 tiers wide).
+  # Example with a max XI enchant: <20 XP levels tops out ~III,
+  # 30 XP levels usually rolls IV-VI.
+  mid-scale: 0.55
+  # Chance (scaled by power) to JACKPOT a tier above the normal band,
+  # e.g. VII-XI on a max XI enchant at 30 XP levels.
+  jackpot-chance: 0.08
+
+# ---------- Effect refresh ----------
+# How often (in ticks) worn armor / held tool effects are re-applied. 20 ticks = 1s.
+effect-refresh-ticks: 40
+
+# ---------- Dreamcatcher (flying boots) ----------
+dreamcatcher:
+  # Minutes of FLIGHT time per 1 durability drained from the boots
+  # (drains only while flying, not just wearing them).
+  durability-drain-minutes: 3
+  # Below this remaining durability the boots refuse to fly until repaired.
+  min-durability: 30
+  # At/below this remaining durability a RED warning boss bar shows WHILE
+  # flying, telling the player to repair. Hidden when they land or repair.
+  warn-durability: 35
+
+  # ---- Drain messages & sounds ----
+  # Random colored message when passive flight drains -1 (& color codes).
+  drain-messages:
+    - "&d✦ &7Oh, looks like the boots are getting tired... &c-1 durability"
+    - "&d✦ &7Dreamcatcher awakens from its sleep! &c-1 durability"
+  # Message when SPRINT-flying costs -1 durability.
+  sprint-drain-message: "&d✦ &7Dreamcatcher can't handle the winds! &c-1 durability"
+  # Message when stutter-sprinting (sprint>stop spam) costs -1 durability.
+  sprint-spam-message: "&d✦ &7Dreamcatcher is dizzy from your stutter-flying! &c-1 durability"
+
+  # ---- Sprint gamble ----
+  # While SPRINT-flying, a hidden countdown between min..max seconds is
+  # rolled. Keep sprinting past it -> -1 durability, then a fresh roll.
+  # Stop sprinting before it ends -> countdown voids, no loss.
+  sprint-chance-min-seconds: 3
+  sprint-chance-max-seconds: 15
+  # Unbreaking stretches the countdown window:
+  # scale = 1 + (unbreaking level x this). At 1.0, Unbreaking III = 12-60s.
+  # Set 0.66 for roughly 10-45s at Unbreaking III.
+  sprint-unbreaking-multiplier: 1.0
+  # Stutter-sprint punishment: this many sprint STARTS while flying within
+  # the window -> instant -1 durability with the special message above.
+  sprint-toggle-limit: 4
+  sprint-toggle-window-seconds: 10
