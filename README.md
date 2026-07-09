@@ -1,56 +1,86 @@
-# Gala Enchantment Basic (GEB)
+package com.gala.geb.listener;
 
-Custom enchantment creator for **PaperMC 26.1.2**. Admins build effect-based
-enchantments for tools, weapons and armor entirely through in-game chest GUIs.
+import com.gala.geb.GEBPlugin;
+import com.gala.geb.enchant.CustomEffect;
+import com.gala.geb.enchant.EnchantManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.GameMode;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.inventory.ItemStack;
 
-## Commands (OP / `geb.admin` only)
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
-| Command | What it does |
-|---|---|
-| `/geb create` | Opens the creator GUI (row 1 tools, row 2 weapons, row 3 armor) |
-| `/geb remove` | Opens the remove GUI — deleting an enchant reloads instantly |
-| `/geb reload` | Reloads `config.yml` and `systemenchantment.yml` |
-| `/geb list`   | Lists every created enchantment |
-| `/geb give <player> <id>` | Gives the enchanted-book version |
+/**
+ * Handles the Dreamcatcher double-jump: if the boots are below the
+ * durability threshold, the lift-off is blocked and the player gets
+ * a chat warning telling them to repair.
+ */
+public class FlightListener implements Listener {
 
-Aliases: `/gbe`, `/gba`, `/galaenchant` — all identical to `/geb`.
+    private final GEBPlugin plugin;
+    /** Small message cooldown so spamming space does not flood the chat. */
+    private final Map<UUID, Long> lastWarning = new HashMap<>();
 
-## Create flow
+    public FlightListener(GEBPlugin plugin) {
+        this.plugin = plugin;
+    }
 
-1. **Item select** — click Pickaxe / Sword / Chestplate / etc.
-2. **Type select** — `Effect` (vanilla effects) or `Custom` (Bloodlust, Ignite, ...).
-3. **Effect list** — paginated, blacklist already filtered out.
-4. **Level select** — I up to XI (configurable via `max-level`).
-5. **Result tab** — shows item + effect + level with:
-   - **Accept** → saves to `systemenchantment.yml`
-   - **Back** → previous page
-   - **Decline** → cancels and reverts to page 1
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        // Run 2 ticks later so the player is fully in the world before we
+        // restore flight (prevents the "logged out mid-air, rejoin and fall
+        // to your death" problem).
+        Player player = event.getPlayer();
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) plugin.equipTask().restoreOnJoin(player);
+        }, 2L);
+    }
 
-Every page also has **Back** (arrow) and **Exit** (barrier) buttons.
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        plugin.equipTask().cleanup(event.getPlayer());
+        plugin.gui().clearSession(event.getPlayer());
+        lastWarning.remove(event.getPlayer().getUniqueId());
+    }
 
-## How enchantments work in-game
+    @EventHandler
+    public void onToggleFlight(PlayerToggleFlightEvent event) {
+        if (!event.isFlying()) return; // only care about lift-off attempts
+        Player player = event.getPlayer();
+        GameMode mode = player.getGameMode();
+        if (mode != GameMode.SURVIVAL && mode != GameMode.ADVENTURE) return;
 
-- **Armor** (Effect type): worn pieces give the wearer the effect constantly.
-- **Tools** (Effect type): buff the holder while the tool is in the main hand.
-- **Weapons** (Effect type): apply the effect to the entity you hit
-  (5 s per level).
-- **Bloodlust** (Custom, weapon only, max I): every hit on any player or mob
-  heals the attacker with Instant Health I.
-- **Enchanting table**: enchanting a matching item has a configurable chance
-  (default 20 %) to add a random GEB enchant on top of vanilla ones.
-- **Anvil**: combine an item with a GEB enchanted book (`/geb give`).
+        ItemStack boots = player.getInventory().getBoots();
+        if (!plugin.enchants().hasCustomEffect(boots, CustomEffect.DREAMCATCHER)) return;
 
-## Blacklist
+        int remaining = EnchantManager.remainingDurability(boots);
+        int min = plugin.getConfig().getInt("dreamcatcher.min-durability", 30);
+        if (remaining >= min) return; // healthy boots, let the flight happen
 
-`config.yml` → `blacklist.global` blocks abusable effects everywhere
-(Instant Health, Levitation "shulker flying", Saturation, ...). On top of that:
+        // Boots too worn: block the lift-off and warn.
+        event.setCancelled(true);
+        player.setFlying(false);
 
-- Armor/tools block **harmful** effects (they'd hurt the owner).
-- Weapons block **beneficial** effects (they'd only help the enemy you hit).
-
-## Data folder
-
-All plugin files (config.yml + systemenchantment.yml) are stored in:
-`plugins/Gala Enchantment Basic/`
-
-
+        long now = System.currentTimeMillis();
+        Long last = lastWarning.get(player.getUniqueId());
+        if (last == null || now - last > 2000) {
+            lastWarning.put(player.getUniqueId(), now);
+            player.sendMessage(Component.text("[GEB] ", NamedTextColor.DARK_PURPLE)
+                    .append(Component.text("Your Dreamcatcher boots are too damaged to fly! ",
+                            NamedTextColor.RED))
+                    .append(Component.text("(" + remaining + " durability left, needs " + min + ") ",
+                            NamedTextColor.GRAY))
+                    .append(Component.text("Repair them at an anvil.", NamedTextColor.YELLOW)));
+            player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.4f, 1.4f);
+        }
+    }
+}
