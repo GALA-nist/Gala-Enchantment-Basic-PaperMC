@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,8 +31,25 @@ jobs:
             cd GalaEnchantmentBasic && gradle build --no-daemon
           fi
 
-      - name: Upload jar
+      - name: Read version and locate jar
+        id: meta
+        run: |
+          FILE=build.gradle
+          [ -f "$FILE" ] || FILE=GalaEnchantmentBasic/build.gradle
+          VERSION=$(grep -m1 "^version" "$FILE" | sed "s/.*'\(.*\)'.*/\1/")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          JAR=$(find . -path '*build/libs/*.jar' ! -name '*sources*' | head -1)
+          echo "jar=$JAR" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact (versioned name)
         uses: actions/upload-artifact@v4
         with:
-          name: GalaEnchantmentBasic-jar
+          name: GalaEnchantmentBasic-${{ steps.meta.outputs.version }}
           path: '**/build/libs/*.jar'
+
+      - name: Publish direct .jar to Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.meta.outputs.version }}
+          name: GalaEnchantmentBasic v${{ steps.meta.outputs.version }}
+          files: ${{ steps.meta.outputs.jar }}
